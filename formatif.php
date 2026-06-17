@@ -2,7 +2,8 @@
 
 class User 
 {
-    public $nama, $noHp;
+    protected $nama;
+    protected $noHp;
 
     public function __construct($nama, $noHp) 
     {
@@ -15,6 +16,11 @@ class User
         return $this->nama; 
     }
 
+    public function getNoHp() 
+    { 
+        return $this->noHp; 
+    }
+
     public function getStatus() 
     { 
         return "User Biasa"; 
@@ -23,7 +29,7 @@ class User
 
 class Pelanggan extends User 
 {
-    public $poin = 0;
+    private $poin = 0;
 
     public function getStatus($subtotal = 0) 
     { 
@@ -34,11 +40,17 @@ class Pelanggan extends User
     { 
         $this->poin += floor($total / 10000); 
     }
+
+    public function getPoin() 
+    {
+        return $this->poin;
+    }
 }
 
 class Layanan 
 {
-    public $jenis, $tarif;
+    private $jenis;
+    private $tarif;
 
     public function __construct($jenis) 
     {
@@ -52,11 +64,15 @@ class Layanan
             default            => 0 
         };
     }
+
+    public function getJenis() { return $this->jenis; }
+    public function getTarif() { return $this->tarif; }
 }
 
 class Voucher 
 {
-    public $kodeVoucher, $diskonPersen;
+    private $kodeVoucher;
+    private $diskonPersen;
 
     public function __construct($kodeVoucher) 
     {
@@ -83,47 +99,28 @@ abstract class Pembayaran
 
 class Cash extends Pembayaran 
 {
-    public function getMetode() 
-    { 
-        return "Cash"; 
-    }
-
-    public function getBiayaAdmin() 
-    { 
-        return 0; 
-    }
+    public function getMetode() { return "Cash"; }
+    public function getBiayaAdmin() { return 0; }
 }
 
 class EWallet extends Pembayaran 
 {
-    public function getMetode() 
-    { 
-        return "E-Wallet"; 
-    }
-
-    public function getBiayaAdmin() 
-    { 
-        return 1000; 
-    }
+    public function getMetode() { return "E-Wallet"; }
+    public function getBiayaAdmin() { return 1000; }
 }
 
 class TransferBank extends Pembayaran 
 {
-    public function getMetode() 
-    { 
-        return "Transfer Bank"; 
-    }
-
-    public function getBiayaAdmin() 
-    { 
-        return 2500; 
-    }
+    public function getMetode() { return "Transfer Bank"; }
+    public function getBiayaAdmin() { return 2500; }
 }
 
 class Transaksi 
 {
     private static $totalTransaksi = 0;
-    public $pelanggan, $layanan, $pembayaran, $voucher, $jarakTempuh, $subtotal, $diskonMember, $diskonVoucher, $biayaAdmin, $total, $statusMember;
+    
+    private $pelanggan, $layanan, $pembayaran, $voucher, $jarakTempuh;
+    private $subtotal, $diskonMember, $diskonVoucher, $biayaAdmin, $total, $statusMember;
 
     public function __construct(Pelanggan $pelanggan, Layanan $layanan, Pembayaran $pembayaran, Voucher $voucher, $jarakTempuh) 
     {
@@ -142,7 +139,7 @@ class Transaksi
 
     public function hitungTotal() 
     {
-        $this->subtotal = $this->jarakTempuh * $this->layanan->tarif;
+        $this->subtotal = $this->jarakTempuh * $this->layanan->getTarif();
         $this->statusMember = $this->pelanggan->getStatus($this->subtotal);
         $this->diskonMember = ($this->statusMember == "Member") ? $this->subtotal * 0.05 : 0;
         $this->diskonVoucher = $this->voucher->hitungDiskon($this->subtotal);
@@ -150,6 +147,17 @@ class Transaksi
         $this->total = $this->subtotal - $this->diskonMember - $this->diskonVoucher + $this->biayaAdmin;
         $this->pelanggan->tambahPoin($this->total);
     }
+
+    public function getPelanggan() { return $this->pelanggan; }
+    public function getLayanan() { return $this->layanan; }
+    public function getPembayaran() { return $this->pembayaran; }
+    public function getJarakTempuh() { return $this->jarakTempuh; }
+    public function getSubtotal() { return $this->subtotal; }
+    public function getStatusMember() { return $this->statusMember; }
+    public function getDiskonMember() { return $this->diskonMember; }
+    public function getDiskonVoucher() { return $this->diskonVoucher; }
+    public function getBiayaAdmin() { return $this->biayaAdmin; }
+    public function getTotal() { return $this->total; }
 }
 
 $tampilan = $error = "";
@@ -189,18 +197,18 @@ if (isset($_POST['hitung'])) {
         $trx = new Transaksi(new Pelanggan($nama, $noHp), new Layanan($pilihanLayanan), $pembayaran, new Voucher($voucher), $jarak);
         $trx->hitungTotal();
 
-        $tampilan = "Nama Pelanggan: {$trx->pelanggan->nama} <br>
-            Status: {$trx->statusMember} <br>
-            Poin: {$trx->pelanggan->poin} Poin <br><hr>
-            Layanan: {$trx->layanan->jenis}<br>
-            Jarak: {$trx->jarakTempuh} km <br>
-            Tarif/km: Rp " . number_format($trx->layanan->tarif, 0, ',', '.') . "<br>
-            Metode: " . $trx->pembayaran->getMetode() . "<hr>
-            Subtotal: Rp " . number_format($trx->subtotal, 0, ',', '.') . "<br>
-            Diskon Member: Rp " . number_format($trx->diskonMember, 0, ',', '.') . "<br>
-            Diskon Voucher: Rp " . number_format($trx->diskonVoucher, 0, ',', '.') . "<br>
-            Admin: Rp " . number_format($trx->biayaAdmin, 0, ',', '.') . "<br>
-            <strong>Total Bayar: Rp " . number_format($trx->total, 0, ',', '.') . "</strong><br>
+        $tampilan = "Nama Pelanggan: {$trx->getPelanggan()->getNama()} <br>
+            Status: {$trx->getStatusMember()} <br>
+            Poin: {$trx->getPelanggan()->getPoin()} Poin <br><hr>
+            Layanan: {$trx->getLayanan()->getJenis()}<br>
+            Jarak: {$trx->getJarakTempuh()} km <br>
+            Tarif/km: Rp " . number_format($trx->getLayanan()->getTarif(), 0, ',', '.') . "<br>
+            Metode: " . $trx->getPembayaran()->getMetode() . "<hr>
+            Subtotal: Rp " . number_format($trx->getSubtotal(), 0, ',', '.') . "<br>
+            Diskon Member: Rp " . number_format($trx->getDiskonMember(), 0, ',', '.') . "<br>
+            Diskon Voucher: Rp " . number_format($trx->getDiskonVoucher(), 0, ',', '.') . "<br>
+            Admin: Rp " . number_format($trx->getBiayaAdmin(), 0, ',', '.') . "<br>
+            <strong>Total Bayar: Rp " . number_format($trx->getTotal(), 0, ',', '.') . "</strong><br>
             <small style='color: gray;'>Total Transaksi: " . Transaksi::getTotalTransaksi() . "</small>";
     }
 }
@@ -263,7 +271,6 @@ if (isset($_POST['hitung'])) {
             width: 100%; 
             padding: 15px; 
             transition: 0.3s;
-
         }
     </style>
 </head>
